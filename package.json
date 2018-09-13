@@ -1,0 +1,15 @@
+{
+  "name": "sfdx-live-reload",
+  "version": "0.0.1",
+  "description": "Live reload for SFDX development",
+  "main": "index.js",
+  "bin": {
+    "sfdx-live-reload": "./bin/sfdx-live-reload.js"
+  },
+  "scripts": {},
+  "author": "Mehdi Vasigh",
+  "license": "MIT",
+  "dependencies": {
+    "minimist": "^1.2.0"
+  }
+}
