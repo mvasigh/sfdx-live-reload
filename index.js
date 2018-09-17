@@ -1,6 +1,6 @@
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 const watch = require('watch');
-const chromix = require('chromix-too')().chromix;
-const exec = require('child_process').exec;
 const argv = require('yargs')
   .demandCommand(0, 1, null, 'Too many commands')
   .option('u', {
@@ -23,7 +23,10 @@ watch.watchTree(`${process.cwd()}/force-app`, {}, (f, curr, prev) => {
     const predicate = argv.u
       ? o => o.alias === argv.u
       : o => o.isDefaultUsername;
-    const orgSubdomain = orgs.find(predicate).instanceUrl.split('.')[0];
+    const orgSubdomain = orgs
+      .find(predicate)
+      .instanceUrl.split('.')[0]
+      .slice(8);
 
     exec(
       `sfdx force:source:push ${argv.u ? '-u ' + argv.u : ''}`,
@@ -32,12 +35,26 @@ watch.watchTree(`${process.cwd()}/force-app`, {}, (f, curr, prev) => {
           console.log(`exec err: ${err}`);
         }
         console.log(stdout);
-        exec(`chromix-too reload ${orgSubdomain}`, (err, stdout, stderr) => {
-          if (err) {
-            console.log(err);
-          }
-        });
+        getTabs(orgSubdomain).then(tabList =>
+          tabList.forEach(tab => {
+            exec(`chrome-cli reload -t ${tab.id}`);
+          })
+        );
       }
     );
   });
 });
+
+async function getTabs(subdomain) {
+  const { stdout, stderr } = await exec(`chrome-cli list links`);
+  const tabList = stdout.split('\n').map(tab => {
+    const [id, url] = tab.split(' ', 2);
+    return {
+      id: id.slice(1, -1),
+      url
+    };
+  });
+  return tabList
+    .filter(tab => tab.id)
+    .filter(tab => tab.url.includes(subdomain));
+}
