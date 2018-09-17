@@ -6,47 +6,34 @@ const argv = require('yargs')
   .option('u', {
     alias: 'org',
     demandOption: false,
+    default: '',
     describe:
       'Alias of the scratch org that you want to push to (leave blank to use default).',
     type: 'string'
   }).argv;
 
-watch.watchTree(`${process.cwd()}/force-app`, {}, (f, curr, prev) => {
+watch.watchTree(`${process.cwd()}/force-app`, {}, async () => {
   console.clear();
-  // get org url
-  exec('sfdx force:org:list --json', (err, stdout, stderr) => {
-    if (err) {
-      console.error(err);
-    }
-    const result = JSON.parse(stdout).result;
-    const orgs = result.nonScratchOrgs.concat(result.scratchOrgs);
-    const predicate = argv.u
-      ? o => o.alias === argv.u
-      : o => o.isDefaultUsername;
-    const orgSubdomain = orgs
-      .find(predicate)
-      .instanceUrl.split('.')[0]
-      .slice(8);
-
-    exec(
-      `sfdx force:source:push ${argv.u ? '-u ' + argv.u : ''}`,
-      (err, stdout, stderr) => {
-        if (err) {
-          console.log(`exec err: ${err}`);
-        }
-        console.log(stdout);
-        getTabs(orgSubdomain).then(tabList =>
-          tabList.forEach(tab => {
-            exec(`chrome-cli reload -t ${tab.id}`);
-          })
-        );
-      }
-    );
-  });
+  const result = await pushToOrg(argv.u);
+  console.log(result);
+  const orgSubdomain = await getOrgSubdomain(argv.u);
+  const tabList = await getTabs(orgSubdomain);
+  tabList.forEach(tab => reloadTab(tab.id));
 });
 
+async function getOrgSubdomain(alias) {
+  const { stdout } = await exec('sfdx force:org:list --json');
+  const result = JSON.parse(stdout).result;
+  const orgs = result.nonScratchOrgs.concat(result.scratchOrgs);
+  const predicate = alias ? o => o.alias === alias : o => o.isDefaultUsername;
+  return orgs
+    .find(predicate)
+    .instanceUrl.split('.')[0]
+    .slice(8);
+}
+
 async function getTabs(subdomain) {
-  const { stdout, stderr } = await exec(`chrome-cli list links`);
+  const { stdout } = await exec('chrome-cli list links');
   const tabList = stdout.split('\n').map(tab => {
     const [id, url] = tab.split(' ', 2);
     return {
@@ -57,4 +44,15 @@ async function getTabs(subdomain) {
   return tabList
     .filter(tab => tab.id)
     .filter(tab => tab.url.includes(subdomain));
+}
+
+async function pushToOrg(alias) {
+  const { stdout } = await exec(
+    `sfdx force:source:push ${alias ? '-u ' + alias : ''}`
+  );
+  return stdout;
+}
+
+function reloadTab(tabId) {
+  exec(`chrome-cli reload -t ${tabId}`);
 }
