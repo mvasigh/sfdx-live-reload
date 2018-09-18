@@ -35,11 +35,13 @@ async function getOrgSubdomain(alias) {
 async function getTabs(subdomain) {
   const { stdout } = await exec('chrome-cli list links');
   const tabList = stdout.split('\n').map(tab => {
-    const [id, url] = tab.split(' ', 2);
-    return {
-      id: id.slice(1, -1),
-      url
-    };
+    let [id, url] = tab.split(' ', 2);
+    id = id.slice(1, -1);
+    if (id.includes(':')) {
+      const idArr = id.split(':');
+      id = idArr[idArr.length - 1];
+    }
+    return { id, url };
   });
   return tabList
     .filter(tab => tab.id)
