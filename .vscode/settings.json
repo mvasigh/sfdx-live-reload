@@ -1,6 +1,6 @@
 {
     "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true,
-    "editor.tabSize": 2,
+    "editor.tabSize": 4,
     "prettier.singleQuote": true
 }

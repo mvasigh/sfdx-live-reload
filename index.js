@@ -24,7 +24,7 @@ watch.watchTree(`${process.cwd()}/force-app`, { interval: 1 }, async () => {
 
 async function getOrgSubdomain(alias) {
     const { stdout } = await exec('sfdx force:org:list --json');
-    const result = JSON.parse(stdout).result;
+    const { result } = JSON.parse(stdout);
     const orgs = result.nonScratchOrgs.concat(result.scratchOrgs);
     const predicate = alias ? o => o.alias === alias : o => o.isDefaultUsername;
     return orgs
