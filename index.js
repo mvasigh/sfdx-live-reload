@@ -12,7 +12,9 @@ const argv = require('yargs')
         type: 'string'
     }).argv;
 
-watch.watchTree(`${process.cwd()}/force-app`, { interval: 1 }, async () => {
+watch.watchTree(`${process.cwd()}/force-app`, { interval: 1 }, develop);
+
+async function develop() {
     console.clear();
     const { stdout, stderr } = await pushToOrg(argv.u);
     console.log(stdout);
@@ -20,7 +22,7 @@ watch.watchTree(`${process.cwd()}/force-app`, { interval: 1 }, async () => {
     const orgSubdomain = await getOrgSubdomain(argv.u);
     const tabList = await getTabs(orgSubdomain);
     tabList.forEach(tab => reloadTab(tab.id));
-});
+}
 
 async function getOrgSubdomain(alias) {
     const { stdout } = await exec('sfdx force:org:list --json');
